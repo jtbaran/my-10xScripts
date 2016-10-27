@@ -1,0 +1,38 @@
+#!/usr/bin/env Rscript
+# J. Baran-Gale
+# University of Edinburgh
+# V 1.0
+# 15 Sept 2016
+# Requires cellrangerRkit. Install using the command:
+# source("http://s3-us-west-2.amazonaws.com/10x.files/code/rkit_install.R")
+# For data in multiple directories(ex: /data/10x/mySamp_10x_1, /data/10x/mySamp_10x_2), 
+# run script using the command:
+# Rscript --vanilla 10x_report.Rscript /data/10x/mySamp_10x_S*
+
+library(cellrangerRkit)
+args = commandArgs(trailingOnly=TRUE)
+
+
+gbm_list<-list()
+i<-1
+for (arg in args) {
+   gbm_list[[i]]<-load_cellranger_matrix(arg,genome="mm10",barcode_filtered=FALSE)
+   gbm_list[[i]]@annotation<-paste0("S",i)
+   i<-i+1
+}
+
+jpeg("SampPlots.jpg")
+N<-ceiling(sqrt(length(args)))
+par(mfrow=c(N,N))
+e1<-data.frame(S1=t(gbm_list[[1]]@summary))
+i<-1
+for (g in gbm_list) { 
+   e1[,paste0("S",i)]<-t(g@summary)
+   i<-i+1
+   plot_barcode_counts(g)
+   abline(v=as.numeric(gsub(",", "", g@summary[1])),col='red')
+   title(g@annotation)
+}
+dev.off()
+write.table(e1,"10x_summary.txt")
+
